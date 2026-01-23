@@ -1,0 +1,15 @@
+# CPU-only PyTorch (smaller image, no CUDA dependencies)
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.2.0+cpu
+
+# ONNX export and runtime
+onnx==1.15.0
+onnxruntime==1.17.0
+
+# FastAPI and server
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+pydantic==2.6.0
+
+# Utilities
+numpy>=1.24.0,<2.0.0

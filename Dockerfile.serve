@@ -1,0 +1,38 @@
+# =============================================================================
+# Dockerfile for FastAPI Inference Server
+# Trains the model during build so the image contains artifacts/model.onnx
+# =============================================================================
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Create non-root user
+RUN useradd --create-home --shell /bin/bash appuser
+
+# Install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy source code
+COPY train_export.py .
+COPY inference_onnx.py .
+COPY app.py .
+
+# Create artifacts directory
+RUN mkdir -p /app/artifacts
+
+# Train and export model during build (bakes model into image)
+RUN python train_export.py
+
+# Set ownership after model is created
+RUN chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
+
+# Expose port
+EXPOSE 8000
+
+# Start FastAPI server
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
