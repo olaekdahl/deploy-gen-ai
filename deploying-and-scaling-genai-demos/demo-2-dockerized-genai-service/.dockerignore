@@ -37,3 +37,7 @@ pytest.ini
 
 # ONNX model directory (mount as a volume if needed)
 onnx_model/
+
+# Node.js build artifacts (source is needed, but not node_modules)
+frontend/node_modules/
+static/

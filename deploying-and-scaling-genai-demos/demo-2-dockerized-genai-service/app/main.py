@@ -7,9 +7,11 @@ Same FastAPI application as Demo 1, packaged for containerized deployment.
 import os
 import uuid
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.inference import generate_text, load_model
 from app.logging_config import setup_logging
@@ -76,3 +78,13 @@ async def global_exception_handler(request: Request, exc: Exception):
         status_code=500,
         content={"detail": "Internal server error."},
     )
+
+
+# ---------------------------------------------------------------------------
+# Serve the React UI from the /static directory (built by Vite)
+# This must be mounted AFTER the API routes so /health and /generate
+# take priority over the catch-all static file handler.
+# ---------------------------------------------------------------------------
+_static_dir = Path(__file__).resolve().parent.parent / "static"
+if _static_dir.is_dir():
+    app.mount("/", StaticFiles(directory=str(_static_dir), html=True), name="static")

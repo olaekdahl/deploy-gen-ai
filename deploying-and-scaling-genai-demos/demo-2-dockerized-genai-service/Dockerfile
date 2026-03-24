@@ -21,7 +21,19 @@
 #       long as dependencies have not changed, even if app code changes.
 # ---------------------------------------------------------------------------
 
-# ========================== Stage 1: Builder ==========================
+# ========================== Stage 1: Frontend Build ==========================
+FROM node:20-alpine AS frontend
+
+WORKDIR /build
+COPY frontend/package.json frontend/package-lock.json* ./
+RUN npm install
+COPY frontend/ ./
+RUN npm run build
+# Output lands in /build/../static -> we adjust: output goes to /build/dist
+# Vite config sets outDir: '../static', so from /build it writes to /static
+# We'll copy from /static in the runtime stage
+
+# ========================== Stage 2: Python Builder ==========================
 FROM python:3.11-slim AS builder
 
 # Avoid interactive prompts during package installation
@@ -57,6 +69,9 @@ WORKDIR /home/appuser/app
 
 # Copy application code
 COPY app/ ./app/
+
+# Copy the built React UI from the frontend stage
+COPY --from=frontend /static ./static/
 
 # Switch to non-root user
 USER appuser
