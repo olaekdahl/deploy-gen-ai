@@ -63,12 +63,17 @@ def load_model(
             onnx_path,
             extra={"model_name": model_name},
         )
-        onnx_model = ORTModelForCausalLM.from_pretrained(onnx_path)
+        # Force CPU execution provider to avoid CUDA errors on machines
+        # without a GPU or without the CUDA ONNX Runtime package installed.
+        onnx_model = ORTModelForCausalLM.from_pretrained(
+            onnx_path, provider="CPUExecutionProvider"
+        )
         tokenizer = AutoTokenizer.from_pretrained(onnx_path)
         _pipeline = pipeline(
             "text-generation",
             model=onnx_model,
             tokenizer=tokenizer,
+            device="cpu",
         )
     else:
         logger.info(
