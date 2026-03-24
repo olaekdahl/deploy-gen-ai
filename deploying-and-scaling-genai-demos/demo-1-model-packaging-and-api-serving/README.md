@@ -117,6 +117,13 @@ curl -X POST http://localhost:8000/generate \
 
 Returns a 422 response showing Pydantic validation errors.
 
+### Debug Torch
+
+```bash
+cd /deploy-gen-ai/deploying-and-scaling-genai-demos/demo-1-model-packaging-and-api-serving
+python debug_pytorch.py
+```
+
 ---
 
 ## File Structure
