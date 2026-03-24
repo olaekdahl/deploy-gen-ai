@@ -1,0 +1,9 @@
+# Namespace isolates the demo resources from other workloads.
+# Instructor note: Namespaces provide logical isolation within a cluster.
+# In production, teams often use namespaces per environment or per service group.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: genai-demo
+  labels:
+    app.kubernetes.io/part-of: genai-demo

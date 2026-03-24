@@ -1,0 +1,73 @@
+# Deployment manages the desired state of our GenAI service pods.
+#
+# Instructor note:
+#   - replicas: 2 provides basic availability. The HPA will adjust this.
+#   - resources.requests: the scheduler uses these to place pods on nodes.
+#   - resources.limits: the kubelet enforces these to prevent noisy neighbors.
+#   - readinessProbe: traffic is only sent to pods that have loaded the model.
+#   - livenessProbe: pods that stop responding are restarted.
+#   - startupProbe: gives the model time to download/load before other probes kick in.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: genai-service
+  namespace: genai-demo
+  labels:
+    app: genai-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: genai-service
+  template:
+    metadata:
+      labels:
+        app: genai-service
+    spec:
+      containers:
+        - name: genai-service
+          # When using minikube: eval $(minikube docker-env) before building,
+          # then set imagePullPolicy: Never.
+          # For a real registry, push the image and use a fully qualified name.
+          image: genai-service:v3
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+              name: http
+              protocol: TCP
+          env:
+            - name: MODEL_NAME
+              value: "distilgpt2"
+          # Resource requests and limits
+          # Instructor note: These values are sized for classroom machines.
+          # In production, profile your model and set these based on actual usage.
+          resources:
+            requests:
+              cpu: "500m"        # 0.5 CPU cores
+              memory: "1Gi"      # 1 GB RAM
+            limits:
+              cpu: "2000m"       # 2 CPU cores
+              memory: "2Gi"      # 2 GB RAM
+          # Startup probe: generous timeout for model loading
+          startupProbe:
+            httpGet:
+              path: /ready
+              port: 8000
+            failureThreshold: 30
+            periodSeconds: 10
+          # Readiness probe: only route traffic when the model is loaded
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+          # Liveness probe: restart the pod if the service stops responding
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            failureThreshold: 3

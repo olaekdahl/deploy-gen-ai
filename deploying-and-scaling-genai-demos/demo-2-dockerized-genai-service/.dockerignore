@@ -1,0 +1,39 @@
+# Version control
+.git
+.gitignore
+
+# Python artifacts
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+dist/
+build/
+.venv/
+venv/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Documentation (not needed in the image)
+README.md
+*.md
+
+# Environment files (secrets should be injected at runtime)
+.env
+.env.*
+
+# Test and development files
+tests/
+*.test.py
+pytest.ini
+
+# ONNX model directory (mount as a volume if needed)
+onnx_model/

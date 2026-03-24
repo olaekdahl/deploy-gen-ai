@@ -1,0 +1,13 @@
+.git
+__pycache__
+*.pyc
+.venv/
+venv/
+.vscode/
+.idea/
+*.md
+.env
+.env.*
+tests/
+onnx_model/
+k8s/

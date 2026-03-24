@@ -1,0 +1,53 @@
+# HorizontalPodAutoscaler automatically adjusts the number of replicas
+# based on observed CPU utilization.
+#
+# Instructor note:
+#   HOW SCALING DECISIONS ARE MADE:
+#
+#   1. The metrics-server collects CPU and memory usage from each pod.
+#   2. The HPA controller checks these metrics every 15 seconds (default).
+#   3. It calculates the desired replica count using:
+#        desiredReplicas = ceil(currentReplicas * (currentMetricValue / targetMetricValue))
+#   4. Example: if 2 pods are running at 80% CPU and the target is 50%,
+#        desired = ceil(2 * (80/50)) = ceil(3.2) = 4 replicas.
+#   5. The HPA respects minReplicas and maxReplicas as hard bounds.
+#   6. Scale-up happens quickly (default stabilization: 0s).
+#   7. Scale-down is conservative (default stabilization: 300s) to avoid flapping.
+#
+#   For GenAI workloads, CPU is a reasonable proxy for load because
+#   text generation is compute-bound on CPU deployments. In GPU
+#   deployments, you would use custom metrics (e.g., GPU utilization or
+#   request queue depth) instead.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: genai-service-hpa
+  namespace: genai-demo
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: genai-service
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          # Scale up when average CPU exceeds 50%
+          averageUtilization: 50
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 30
+      policies:
+        - type: Pods
+          value: 2
+          periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 120

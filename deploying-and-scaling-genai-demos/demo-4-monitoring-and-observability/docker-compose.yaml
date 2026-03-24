@@ -1,0 +1,49 @@
+# Docker Compose stack: GenAI service + Prometheus + Grafana
+#
+# Instructor note:
+#   This single command brings up the entire observability stack locally.
+#   Students can see metrics flowing from the app to Prometheus to Grafana
+#   without any cloud accounts or complex setup.
+
+services:
+  # The GenAI API service
+  genai-service:
+    build: .
+    container_name: genai-service
+    ports:
+      - "8000:8000"
+    environment:
+      - MODEL_NAME=distilgpt2
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      start_period: 120s
+      retries: 3
+
+  # Prometheus -- scrapes /metrics from the GenAI service
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - genai-service
+
+  # Grafana -- visualizes Prometheus metrics
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus

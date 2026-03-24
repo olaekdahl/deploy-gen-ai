@@ -1,0 +1,33 @@
+# Docker Compose stack: GenAI service + Redis
+#
+# Instructor note:
+#   Redis runs alongside the app and provides sub-millisecond
+#   response caching. The first request for a given prompt runs
+#   inference; subsequent identical requests are served from cache.
+
+services:
+  genai-service:
+    build: .
+    container_name: genai-service
+    ports:
+      - "8000:8000"
+    environment:
+      - MODEL_NAME=distilgpt2
+      - REDIS_URL=redis://redis:6379/0
+      - CACHE_TTL_SECONDS=300
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    # Limit memory to 128 MB for the demo
+    command: ["redis-server", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru"]

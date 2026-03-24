@@ -1,0 +1,12 @@
+.git
+__pycache__
+*.pyc
+.venv/
+venv/
+.vscode/
+*.md
+.env
+.env.*
+tests/
+prometheus/
+grafana/

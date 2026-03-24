@@ -1,0 +1,23 @@
+# Service exposes the GenAI deployment as a stable network endpoint.
+#
+# Instructor note:
+#   - ClusterIP is the default type and works for internal communication.
+#   - Use NodePort or LoadBalancer to expose the service externally.
+#   - The selector must match the pod labels in the Deployment.
+apiVersion: v1
+kind: Service
+metadata:
+  name: genai-service
+  namespace: genai-demo
+  labels:
+    app: genai-service
+spec:
+  type: NodePort
+  selector:
+    app: genai-service
+  ports:
+    - port: 80
+      targetPort: 8000
+      nodePort: 30080
+      protocol: TCP
+      name: http

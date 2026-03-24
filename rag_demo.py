@@ -406,10 +406,105 @@ def run_demo():
     print(response_rag)
     
     # =========================================================================
+    # GENERATION C: WHY THE LLM MATTERS - Reasoning Over Retrieved Content
+    # =========================================================================
+    print("\n\n" + "=" * 70)
+    print("   GENERATION C: WHY THE LLM MATTERS")
+    print("   (Reasoning, Synthesis, and Transformation)")
+    print("=" * 70)
+    print("""
+A database lookup just returns raw text. The LLM adds value by:
+  1. REASONING over the retrieved content
+  2. SYNTHESIZING information from multiple chunks  
+  3. TRANSFORMING the format to match user needs
+  4. ANSWERING QUESTIONS that require understanding
+
+Let's demonstrate with questions that require more than retrieval:
+""")
+    
+    # Questions that demonstrate LLM reasoning over retrieved content
+    reasoning_questions = [
+        {
+            "query": "I'm vegan - can I adapt this chocolate cake recipe? What substitutions would work?",
+            "why": "Requires understanding ingredients AND applying external knowledge about vegan substitutions"
+        },
+        {
+            "query": "I don't have buttermilk. What's a good substitute based on the other ingredients in this recipe?",
+            "why": "Requires reading the recipe AND reasoning about ingredient chemistry"
+        },
+        {
+            "query": "How long will this chocolate cake take from start to finish, including cooling time?",
+            "why": "Requires extracting times from multiple steps AND calculating total"
+        },
+        {
+            "query": "What's the most unusual ingredient in this recipe and why is it used?",
+            "why": "Requires identifying 'unusual' (hot coffee) AND explaining its purpose"
+        }
+    ]
+    
+    for i, q in enumerate(reasoning_questions, 1):
+        print(f"\n{'─'*60}")
+        print(f"REASONING QUESTION {i}: {q['query']}")
+        print(f"WHY LLM NEEDED: {q['why']}")
+        print(f"{'─'*60}")
+        
+        # Retrieve (same chunks, different question)
+        retrieved = retrieve(vector_store, q['query'], k=TOP_K)
+        
+        # Generate with RAG
+        sys_prompt, usr_prompt = build_prompt(q['query'], context_docs=retrieved)
+        response = generate(sys_prompt, usr_prompt, show_prompt=False)
+        
+        print(f"\nLLM RESPONSE:\n{response}")
+    
+    # =========================================================================
+    # COMPARISON: Database vs RAG+LLM
+    # =========================================================================
+    print("\n\n" + "=" * 70)
+    print("   DATABASE LOOKUP vs RAG+LLM")
+    print("=" * 70)
+    print("""
+┌────────────────────────────────────────────────────────────────────────┐
+│                     PLAIN DATABASE LOOKUP                              │
+├────────────────────────────────────────────────────────────────────────┤
+│ Query: "chocolate cake recipe"                                         │
+│ Result: Returns raw text blob of recipe                                │
+│                                                                        │
+│ Query: "Can I make it vegan?"                                          │
+│ Result: ❌ No match found (or returns unrelated vegan recipes)         │
+│                                                                        │
+│ Query: "How long total?"                                               │
+│ Result: ❌ Cannot calculate - just returns text containing times       │
+└────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────────────┐
+│                         RAG + LLM                                      │
+├────────────────────────────────────────────────────────────────────────┤
+│ Query: "chocolate cake recipe"                                         │
+│ Result: ✅ Formatted recipe with clear steps                           │
+│                                                                        │
+│ Query: "Can I make it vegan?"                                          │
+│ Result: ✅ Analyzes ingredients, suggests: butter→coconut oil,         │
+│            eggs→flax eggs, buttermilk→oat milk+vinegar                 │
+│                                                                        │
+│ Query: "How long total?"                                               │
+│ Result: ✅ Calculates: prep(15) + bake(35) + cool(30) + frost(10)      │
+│            = ~90 minutes total                                         │
+└────────────────────────────────────────────────────────────────────────┘
+
+THE LLM PROVIDES:
+  • Comprehension - Understands what the recipe means
+  • Reasoning     - Can answer questions ABOUT the retrieved content  
+  • Synthesis     - Combines info from multiple chunks
+  • Transformation- Reformats for user needs (simplify, translate, etc.)
+  • Conversation  - Handles follow-ups with context
+""")
+    
+    # =========================================================================
     # COMPARISON
     # =========================================================================
     print("\n\n" + "=" * 70)
-    print("   COMPARISON SUMMARY")
+    print("   ORIGINAL COMPARISON SUMMARY")
     print("=" * 70)
     
     print("""

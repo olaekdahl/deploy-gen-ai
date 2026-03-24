@@ -1,0 +1,26 @@
+# Prometheus configuration
+#
+# Instructor note:
+#   The scrape_configs section tells Prometheus WHERE to collect metrics
+#   and HOW OFTEN. The 'targets' list must match the container name and
+#   port of the service exposing /metrics.
+
+global:
+  scrape_interval: 15s      # How often to collect metrics from targets
+  evaluation_interval: 15s  # How often to evaluate alerting rules
+
+scrape_configs:
+  # Scrape Prometheus itself (for self-monitoring)
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Scrape the GenAI service
+  - job_name: "genai-service"
+    scrape_interval: 5s  # More frequent scraping for demo visibility
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["genai-service:8000"]
+        labels:
+          service: "genai-api"
+          environment: "demo"
