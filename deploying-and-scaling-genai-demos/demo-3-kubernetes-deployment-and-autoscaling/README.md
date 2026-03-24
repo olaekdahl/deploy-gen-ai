@@ -15,22 +15,33 @@
 ## Prerequisites
 
 - Docker 24+ installed
-- A local Kubernetes cluster: **minikube** or **kind**
+- **kind** (Kubernetes in Docker): `go install sigs.k8s.io/kind@latest` or `brew install kind`
 - `kubectl` installed and configured
 - `metrics-server` installed in the cluster (required for HPA)
 - Python 3.11+ (for the load test script)
 
-### Setting Up Minikube
+### Setting Up kind
 
 ```bash
-# Start minikube with enough resources for the demo
-minikube start --cpus=4 --memory=8192
+# Create a kind cluster with port mapping for NodePort access
+cat <<EOF | kind create cluster --name genai-demo --config=-
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      - containerPort: 30080
+        hostPort: 30080
+        protocol: TCP
+EOF
 
-# Enable the metrics-server addon (required for HPA)
-minikube addons enable metrics-server
+# Install metrics-server (required for HPA)
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
 
-# Point Docker to minikube's Docker daemon
-eval $(minikube docker-env)
+# Patch metrics-server to work with kind's self-signed certs
+kubectl patch deployment metrics-server -n kube-system \
+  --type='json' \
+  -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--kubelet-insecure-tls"}]'
 ```
 
 ---
@@ -38,8 +49,11 @@ eval $(minikube docker-env)
 ## Building the Image
 
 ```bash
-# Build inside minikube's Docker daemon
+# Build the image locally
 docker build -t genai-service:v3 .
+
+# Load the image into the kind cluster
+kind load docker-image genai-service:v3 --name genai-demo
 ```
 
 ---
@@ -82,18 +96,13 @@ kubectl get hpa -n genai-demo
 
 ## Accessing the Service
 
-### With Minikube
+### Via NodePort (kind)
+
+Because the kind cluster was created with `extraPortMappings`, the NodePort
+is mapped directly to localhost:
 
 ```bash
-# Get the service URL
-minikube service genai-service -n genai-demo --url
-```
-
-### With NodePort
-
-```bash
-# The service is exposed on port 30080 on any cluster node
-curl http://$(minikube ip):30080/health
+curl http://localhost:30080/health
 ```
 
 ### Port Forwarding (alternative)
@@ -109,10 +118,10 @@ curl http://localhost:8000/health
 
 ```bash
 # Health check
-curl http://$(minikube ip):30080/health
+curl http://localhost:30080/health
 
 # Generate text
-curl -X POST http://$(minikube ip):30080/generate \
+curl -X POST http://localhost:30080/generate \
   -H "Content-Type: application/json" \
   -d '{"prompt": "Kubernetes orchestration enables", "max_tokens": 30}'
 ```
@@ -141,7 +150,7 @@ kubectl get pods -n genai-demo --watch
 
 ```bash
 pip install requests
-python load_test.py --url http://$(minikube ip):30080 --concurrency 10 --duration 120
+python load_test.py --url http://localhost:30080 --concurrency 10 --duration 120
 ```
 
 ### What to Observe
@@ -176,7 +185,11 @@ The HPA respects:
 ## Cleanup
 
 ```bash
+# Delete the Kubernetes resources
 kubectl delete namespace genai-demo
+
+# Delete the kind cluster entirely
+kind delete cluster --name genai-demo
 ```
 
 ---

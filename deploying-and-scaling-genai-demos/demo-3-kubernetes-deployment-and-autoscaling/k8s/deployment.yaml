@@ -26,8 +26,8 @@ spec:
     spec:
       containers:
         - name: genai-service
-          # When using minikube: eval $(minikube docker-env) before building,
-          # then set imagePullPolicy: Never.
+          # When using kind: build locally then load with
+          #   kind load docker-image genai-service:v3
           # For a real registry, push the image and use a fully qualified name.
           image: genai-service:v3
           imagePullPolicy: IfNotPresent
